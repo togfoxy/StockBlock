@@ -37,26 +37,57 @@ CHAIN.BLOCK = {}
 MSGLOG = ""
 PLAYER = {}
 
+function sealBlock()
+
+	local lastBlock = #CHAIN.BLOCK
+	local serialisedString = Bitser.dumps(CHAIN.BLOCK[lastBlock])
+	
+	local blockHash = love.data.hash("sha1", serialisedString)
+	CHAIN.BLOCK[lastBlock].thisBlockHash = blockHash
+	
+	saveChain()
+
+end
+
+function createNewBlock()
+	-- 
+	local newBlock = {}
+	newBlock.previousBlockHash = 0
+	newBlock.TRANSACTIONS = {}
+
+	table.insert(CHAIN.BLOCK, newBlock)
+	CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS = {}
+end
+
 function purchaseStock(stockName, stockPrice)
 
-	local transaction = {}
-	
-	transaction.owner = PLAYER.name
-	transaction.type = "purchase"
-	transaction.stock = stockName
-	transaction.price = stockPrice
-	
-	local lastBlock = #CHAIN.BLOCK
-	if lastBlock == 0 then
-		local newBlock = {}
-		newBlock.TRANSACTIONS = {}
-		table.insert(CHAIN.BLOCK, newBlock)
-		lastBlock = 1
-	end
-	
-	table.insert(CHAIN.BLOCK[lastBlock].TRANSACTIONS, transaction)
+	if PLAYER.name ~= nil and PLAYER.name ~= "" then
+		local transaction = {}
+		
+		transaction.owner = PLAYER.name
+		transaction.type = "purchase"
+		transaction.stock = stockName
+		transaction.price = Cf.round(stockPrice,2)
+		
+		if CHAIN.BLOCK == nil then
+			CHAIN.BLOCK = {}
+			createNewBlock()
+		else
+			if CHAIN.BLOCK[#CHAIN.BLOCK].thisBlockHash == nil then
+			else
+				createNewBlock()
+			end
+		end
+		
+		if CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS == nil then
+			CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS = {}
+		end
+		table.insert(CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS, transaction)
 
-	MSGLOG = MSGLOG .. Inspect(CHAIN)
+		MSGLOG = Inspect(CHAIN)
+	else
+		LovelyToasts.show("Provide a name first")
+	end
 end
 
 function saveChain()
@@ -67,22 +98,50 @@ function saveChain()
     local success, message
     local savedir = love.filesystem.getSource()
 
-    savefile = savedir .. "/" .. "Chain.txt"
+    savefile = savedir .. "/" .. "chain.dat"
     serialisedString = Bitser.dumps(CHAIN)
     success, message = Nativefs.write(savefile, serialisedString )
+end
+
+function loadChain()
+
+    local savedir = love.filesystem.getSource()
+    love.filesystem.setIdentity( savedir )
+
+    local savefile
+    local contents
+	local size
+	local error = false
+
+	savefile = savedir .. "/" .. "chain.dat"
+	if Nativefs.getInfo(savefile) then
+		contents, size = Nativefs.read(savefile)
+	    CHAIN = bitser.loads(contents)
+	else
+		error = true
+	end	
+	
+	if error then
+		-- a file is missing, so display a popup on a new game
+		LovelyToasts.show("ERROR: Unable to load chain.", 3, "middle")
+	else
+		MSGLOG = Inspect(CHAIN)
+	end
 end
 
 local function createBlockChain(newChainName)
 
 	if newChainName ~= nil and newChainName ~= "" then
 		CHAIN = {}
+		
+		
 		CHAIN.id = newChainName
 
 		saveChain()
 		
 		PLAYER.wealth = 100
 		
-		MSGLOG = MSGLOG .. Inspect(CHAIN)
+		MSGLOG = Inspect(CHAIN)
 		
 	else
 		LovelyToasts.show("Provide a name first")
@@ -149,25 +208,23 @@ local function DrawForm()
 			local txt = stock[i].name .. ": $" ..  string.format("%.2f", Cf.round(stock[i].price, 2))
 			Slab.Text(txt)
 			if Slab.Button("Purchase " .. stock[i].name) then
-				print("Purchase " .. i)
 				purchaseStock(stock[i].name, stock[i].price)
 			end	
 			if Slab.Button("Sell " .. stock[i].name) then
-				print("Sell " .. i)
 			end	
 			Slab.NewLine()		
 		end
 		
 		if Slab.Button("Create new chain") then
-			createBlockChain(playerName)
+			createBlockChain(PLAYER.name)
 		end	
 		
 		if Slab.Button("Load existing chain") then
-
+			loadChain()
 		end	
 
 		if Slab.Button("Save chain") then
-
+			sealBlock()
 		end			
 	
 		if Slab.Button("OK") then
@@ -177,7 +234,8 @@ local function DrawForm()
 		
 		Slab.SetLayoutColumn(2)
 		
-		Slab.Text(MSGLOG)
+		-- Slab.Text(MSGLOG)
+print(Inspect(CHAIN))
 
 	Slab.EndLayout() -- layout-settings
 	Slab.EndWindow()	
