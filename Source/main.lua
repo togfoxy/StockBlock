@@ -49,10 +49,13 @@ function sealBlock()
 
 end
 
-function createNewBlock()
-	-- 
+function createNewBlock(previousBlockID)
 	local newBlock = {}
-	newBlock.previousBlockHash = 0
+	if previousBlockID == 0 then
+		newBlock.previousBlockHash = 0
+	else
+		newBlock.previousBlockHash = CHAIN.BLOCK[previousBlockID].thisBlockHash
+	end
 	newBlock.TRANSACTIONS = {}
 
 	table.insert(CHAIN.BLOCK, newBlock)
@@ -71,11 +74,13 @@ function purchaseStock(stockName, stockPrice)
 		
 		if CHAIN.BLOCK == nil then
 			CHAIN.BLOCK = {}
-			createNewBlock()
+			createNewBlock(0)
 		else
 			if CHAIN.BLOCK[#CHAIN.BLOCK].thisBlockHash == nil then
+				-- current block is still open for appending
 			else
-				createNewBlock()
+				local previousBlockID = #CHAIN.BLOCK
+				createNewBlock(previousBlockID)
 			end
 		end
 		
