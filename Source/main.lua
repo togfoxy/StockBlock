@@ -4,7 +4,7 @@ love.window.setTitle("Stock Block " .. GAME_VERSION)
 
 -- Global screen dimensions
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 650
 
 Inspect = require 'lib.inspect'
 -- https://github.com/kikito/inspect.lua
@@ -32,8 +32,32 @@ Cf = require 'lib.commonfunctions'
 
 SCREEN_STACK = {}
 CHAIN = {}
+CHAIN.BLOCK = {}
+
 MSGLOG = ""
 PLAYER = {}
+
+function purchaseStock(stockName, stockPrice)
+
+	local transaction = {}
+	
+	transaction.owner = PLAYER.name
+	transaction.type = "purchase"
+	transaction.stock = stockName
+	transaction.price = stockPrice
+	
+	local lastBlock = #CHAIN.BLOCK
+	if lastBlock == 0 then
+		local newBlock = {}
+		newBlock.TRANSACTIONS = {}
+		table.insert(CHAIN.BLOCK, newBlock)
+		lastBlock = 1
+	end
+	
+	table.insert(CHAIN.BLOCK[lastBlock].TRANSACTIONS, transaction)
+
+	MSGLOG = MSGLOG .. Inspect(CHAIN)
+end
 
 function saveChain()
 -- uses the globals because too hard to pass params
@@ -70,7 +94,7 @@ end
 local function DrawForm()
 
 	local intSlabWidth = 400 -- the width of the main menu slab. Change this to change appearance.
-	local intSlabHeight = 500 	-- the height of the main menu slab
+	local intSlabHeight = 550 	-- the height of the main menu slab
 	local fltSlabWindowX = SCREEN_WIDTH / 2 - intSlabWidth / 2
 	local fltSlabWindowY = SCREEN_HEIGHT / 2 - intSlabHeight / 2	
 
@@ -94,9 +118,12 @@ local function DrawForm()
 		
 		Slab.Text("Your name")
 		
-		if Slab.Input('playersName', {Text = playerName}) then
-			playerName = Slab.GetInputText()
+		if Slab.Input('playersName', {Text = PLAYER.name}) then
+			PLAYER.name = Slab.GetInputText()
 		end
+		
+		Slab.Text("Your wealth: " .. tostring(PLAYER.wealth))
+		Slab.NewLine()
 		
 		local timeSinceOrigin = os.time()
 		timeSinceOrigin = timeSinceOrigin / 1000
@@ -123,6 +150,7 @@ local function DrawForm()
 			Slab.Text(txt)
 			if Slab.Button("Purchase " .. stock[i].name) then
 				print("Purchase " .. i)
+				purchaseStock(stock[i].name, stock[i].price)
 			end	
 			if Slab.Button("Sell " .. stock[i].name) then
 				print("Sell " .. i)
@@ -136,7 +164,11 @@ local function DrawForm()
 		
 		if Slab.Button("Load existing chain") then
 
-		end		
+		end	
+
+		if Slab.Button("Save chain") then
+
+		end			
 	
 		if Slab.Button("OK") then
 			-- return to the previous game state
