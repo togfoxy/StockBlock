@@ -156,6 +156,27 @@ local function createBlockChain(newChainName)
 
 end
 
+local function getPlayerData(playername)
+
+print(Inspect(CHAIN))
+
+	for i = #CHAIN.BLOCK, 1, -1 do
+	
+print(i)
+
+		for k,v in pairs(CHAIN.BLOCK[i].TRANSACTIONS) do
+			print(v.owner .. v.type)
+		
+		
+	
+	
+		end
+	end
+
+
+
+end
+
 local function DrawForm()
 
 	local intSlabWidth = 400 -- the width of the main menu slab. Change this to change appearance.
@@ -185,6 +206,10 @@ local function DrawForm()
 		
 		if Slab.Input('playersName', {Text = PLAYER.name}) then
 			PLAYER.name = Slab.GetInputText()
+		end
+		
+		if Slab.Button("Search for name") then
+			getPlayerData(PLAYER.name)
 		end
 		
 		Slab.Text("Your wealth: " .. tostring(PLAYER.wealth))
