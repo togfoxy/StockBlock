@@ -62,13 +62,13 @@ function createNewBlock(previousBlockID)
 	CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS = {}
 end
 
-function purchaseStock(stockName, stockPrice)
+function addTransaction(transactionType, stockName, stockPrice)
 
 	if PLAYER.name ~= nil and PLAYER.name ~= "" then
 		local transaction = {}
 		
 		transaction.owner = PLAYER.name
-		transaction.type = "purchase"
+		transaction.type = transactionType
 		transaction.stock = stockName
 		transaction.price = Cf.round(stockPrice,2)
 		
@@ -89,10 +89,12 @@ function purchaseStock(stockName, stockPrice)
 		end
 		table.insert(CHAIN.BLOCK[#CHAIN.BLOCK].TRANSACTIONS, transaction)
 
-		MSGLOG = Inspect(CHAIN)
+		MSGLOG = MSGLOG .. "Transaction added" .. "\n"
 	else
 		LovelyToasts.show("Provide a name first")
 	end
+	
+print(Inspect(CHAIN))
 end
 
 function saveChain()
@@ -106,6 +108,9 @@ function saveChain()
     savefile = savedir .. "/" .. "chain.dat"
     serialisedString = Bitser.dumps(CHAIN)
     success, message = Nativefs.write(savefile, serialisedString )
+	
+print(Inspect(CHAIN))
+
 end
 
 function loadChain()
@@ -130,7 +135,7 @@ function loadChain()
 		-- a file is missing, so display a popup on a new game
 		LovelyToasts.show("ERROR: Unable to load chain.", 3, "middle")
 	else
-		MSGLOG = Inspect(CHAIN)
+		MSGLOG = MSGLOG .. "Chain loaded" .. "\n"
 	end
 end
 
@@ -138,16 +143,12 @@ local function createBlockChain(newChainName)
 
 	if newChainName ~= nil and newChainName ~= "" then
 		CHAIN = {}
-		
-		
 		CHAIN.id = newChainName
-
 		saveChain()
 		
 		PLAYER.wealth = 100
-		
-		MSGLOG = Inspect(CHAIN)
-		
+
+		MSGLOG = MSGLOG .. "Chain created" .. "\n"
 	else
 		LovelyToasts.show("Provide a name first")
 	end
@@ -213,9 +214,10 @@ local function DrawForm()
 			local txt = stock[i].name .. ": $" ..  string.format("%.2f", Cf.round(stock[i].price, 2))
 			Slab.Text(txt)
 			if Slab.Button("Purchase " .. stock[i].name) then
-				purchaseStock(stock[i].name, stock[i].price)
+				addTransaction("purchase", stock[i].name, stock[i].price)
 			end	
 			if Slab.Button("Sell " .. stock[i].name) then
+				addTransaction("sell", stock[i].name, stock[i].price)
 			end	
 			Slab.NewLine()		
 		end
@@ -234,13 +236,12 @@ local function DrawForm()
 	
 		if Slab.Button("OK") then
 			-- return to the previous game state
+			sealBlock()
 			Cf.RemoveScreen(SCREEN_STACK)
 		end
 		
 		Slab.SetLayoutColumn(2)
-		
-		-- Slab.Text(MSGLOG)
-print(Inspect(CHAIN))
+		Slab.Text(MSGLOG)
 
 	Slab.EndLayout() -- layout-settings
 	Slab.EndWindow()	
